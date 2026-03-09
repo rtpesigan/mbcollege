@@ -494,7 +494,13 @@ function DocumentItem({ name, status }: { name: string; status: 'completed' | 'p
 }
 
 function EnrollmentTimeline() {
-  const steps = [
+  type TimelineStatus = 'completed' | 'active' | 'pending'
+
+  const steps: Array<{
+    name: string
+    status: TimelineStatus
+    icon: typeof CheckCircleIcon
+  }> = [
     { name: 'Account Registration', status: 'completed', icon: CheckCircleIcon },
     { name: 'Personal Information', status: 'completed', icon: CheckCircleIcon },
     { name: 'Document Submission', status: 'active', icon: DocumentIcon },
@@ -502,15 +508,16 @@ function EnrollmentTimeline() {
     { name: 'Final Approval', status: 'pending', icon: CheckCircleIcon },
   ]
 
+  const statusColors: Record<TimelineStatus, string> = {
+    completed: 'bg-success-500 text-white',
+    active: 'bg-warning-500 text-white',
+    pending: 'bg-gray-300 text-gray-600',
+  }
+
   return (
     <div className="timeline">
       {steps.map((step, index) => {
         const Icon = step.icon
-        const statusColors = {
-          completed: 'bg-success-500 text-white',
-          active: 'bg-warning-500 text-white',
-          pending: 'bg-gray-300 text-gray-600',
-        }
 
         return (
           <div key={index} className="timeline-item">
