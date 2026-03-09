@@ -13,7 +13,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Please enter email and password')
         }
@@ -47,9 +47,9 @@ export const authOptions: NextAuthOptions = {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
-          studentId: user.studentId,
-          course: user.course,
-          yearLevel: user.yearLevel,
+          studentId: user.studentId ?? undefined,
+          course: user.course ?? undefined,
+          yearLevel: user.yearLevel ?? undefined,
           enrollmentStatus: user.enrollmentStatus,
         }
       }
