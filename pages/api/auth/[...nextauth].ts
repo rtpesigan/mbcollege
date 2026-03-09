@@ -4,8 +4,17 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
+// Validate required environment variables
+if (!process.env.NEXTAUTH_URL) {
+  console.error('❌ NEXTAUTH_URL environment variable is missing')
+}
+if (!process.env.NEXTAUTH_SECRET) {
+  console.error('❌ NEXTAUTH_SECRET environment variable is missing')
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
