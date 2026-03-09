@@ -2,9 +2,14 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { ApiResponse } from '@/types'
+import { DocumentType, Prisma } from '@prisma/client'
+
+ type NextApiRequestWithFiles = NextApiRequest & {
+  files?: unknown
+ }
 
 export default async function handler(
-  req: NextApiRequest,
+  req: NextApiRequestWithFiles,
   res: NextApiResponse<ApiResponse>
 ) {
   if (req.method !== 'POST') {
@@ -95,12 +100,12 @@ export default async function handler(
     // Handle file uploads
     const files = req.files as any
     if (files) {
-      const documents = []
+      const documents: Prisma.DocumentCreateManyInput[] = []
       
       if (files.idPicture) {
         documents.push({
           userId: user.id,
-          type: 'ID_PICTURE',
+          type: DocumentType.ID_PICTURE,
           fileName: files.idPicture.name,
           filePath: `/uploads/${files.idPicture.name}`,
           fileSize: files.idPicture.size,
@@ -112,7 +117,7 @@ export default async function handler(
       if (files.birthCertificate) {
         documents.push({
           userId: user.id,
-          type: 'BIRTH_CERTIFICATE',
+          type: DocumentType.BIRTH_CERTIFICATE,
           fileName: files.birthCertificate.name,
           filePath: `/uploads/${files.birthCertificate.name}`,
           fileSize: files.birthCertificate.size,
@@ -129,13 +134,18 @@ export default async function handler(
     }
 
     // Log activity
+    const forwardedFor = req.headers['x-forwarded-for']
+    const ipAddress = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor?.split(',')[0]?.trim() || req.socket.remoteAddress || null
+
     await prisma.activityLog.create({
       data: {
         userId: user.id,
         action: 'USER_REGISTERED',
         module: 'AUTHENTICATION',
         details: `User ${email} registered successfully`,
-        ipAddress: req.ip,
+        ipAddress,
         userAgent: req.headers['user-agent'],
       }
     })
