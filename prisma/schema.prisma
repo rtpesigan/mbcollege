@@ -1,0 +1,284 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String?   @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  address       String?
+  dateOfBirth   DateTime?
+  role          Role      @default(STUDENT)
+  studentId     String?   @unique
+  course        String?
+  yearLevel     Int?
+  enrollmentStatus EnrollmentStatus @default(PENDING)
+  idPicture     String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  applications   Application[]
+  payments       Payment[]
+  documents      Document[]
+  enrollments    Enrollment[]
+  grades         Grade[]
+  activityLogs   ActivityLog[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  department  String?
+  isActive    Boolean  @default(true)
+  maxStudents Int      @default(50)
+  tuitionFee  Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  subjects     Subject[]
+  enrollments  Enrollment[]
+  applications Application[]
+
+  @@map("courses")
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  units       Int      @default(3)
+  yearLevel   Int
+  semester    Int
+  courseId    String
+  isActive    Boolean  @default(true)
+  maxStudents Int      @default(40)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollments  Enrollment[]
+  grades       Grade[]
+
+  @@map("subjects")
+}
+
+model Application {
+  id            String          @id @default(cuid())
+  userId        String
+  courseId      String
+  status        ApplicationStatus @default(PENDING)
+  submittedAt   DateTime        @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  remarks       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  documents     Document[]
+
+  @@map("applications")
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  userId       String
+  applicationId String?
+  type         DocumentType
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  status       DocumentStatus @default(PENDING)
+  uploadedAt   DateTime     @default(now())
+  verifiedAt   DateTime?
+  verifiedBy   String?
+  remarks      String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application  Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@map("documents")
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  subjectId   String
+  section     String?
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime @default(now())
+  semester    Int
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  grades      Grade[]
+
+  @@unique([userId, subjectId, academicYear, semester])
+  @@map("enrollments")
+}
+
+model Payment {
+  id            String      @id @default(cuid())
+  userId        String
+  amount        Float
+  paymentMethod PaymentMethod
+  referenceNo   String?
+  status        PaymentStatus @default(PENDING)
+  description   String?
+  proofFile     String?
+  paidAt        DateTime?
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  remarks       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Grade {
+  id          String   @id @default(cuid())
+  userId      String
+  enrollmentId String
+  subjectId   String
+  midterm     Float?
+  finals      Float?
+  average     Float?
+  grade       String?
+  remarks     String?
+  semester    Int
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment  Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  subject     Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectId, academicYear, semester])
+  @@map("grades")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  module      String
+  details     String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("activity_logs")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt @default(now())
+
+  @@map("system_settings")
+}
+
+// Enums
+enum Role {
+  STUDENT
+  REGISTRAR
+  ADMIN
+  CASHIER
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum DocumentType {
+  BIRTH_CERTIFICATE
+  FORM_137
+  GOOD_MORAL
+  MEDICAL_CERTIFICATE
+  ID_PICTURE
+  TRANSFER_CERTIFICATE
+  DIPLOMA
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  ENROLLED
+  DROPPED
+  GRADUATED
+  INACTIVE
+  ACTIVE
+}
+
+enum PaymentMethod {
+  CASH
+  GCASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  CHECK
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+}
