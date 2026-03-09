@@ -56,7 +56,8 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -89,7 +90,12 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
     error: '/login'
-  }
+  },
+  events: {
+    async signIn({ user }) {
+      console.log('User signed in:', user.email)
+    },
+  },
 }
 
 export default NextAuth(authOptions)
