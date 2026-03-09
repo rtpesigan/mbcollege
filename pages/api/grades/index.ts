@@ -69,6 +69,15 @@ export default async function handler(
         return res.status(400).json({ success: false, error: 'userId, enrollmentId, and subjectId are required' })
       }
 
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { id: String(enrollmentId) },
+        select: { academicYear: true, semester: true },
+      })
+
+      if (!enrollment) {
+        return res.status(400).json({ success: false, error: 'Invalid enrollmentId' })
+      }
+
       const mid = midterm === '' || midterm == null ? null : Number(midterm)
       const fin = finals === '' || finals == null ? null : Number(finals)
       const avg = computeAverage(mid, fin)
@@ -82,6 +91,12 @@ export default async function handler(
           finals: fin,
           average: avg,
           remarks: remarks ? String(remarks) : null,
+          academicYear: enrollment.academicYear,
+          semester: enrollment.semester,
+        },
+        include: {
+          subject: { select: { code: true, name: true } },
+          enrollment: { select: { academicYear: true, semester: true } },
         },
       })
 
@@ -89,14 +104,14 @@ export default async function handler(
         success: true,
         data: [{
           id: created.id,
-          code: '',
-          subject: '',
+          code: created.subject.code,
+          subject: created.subject.name,
           midterm: created.midterm,
           finals: created.finals,
           average: created.average,
           remarks: created.remarks ?? null,
-          academicYear: '',
-          semester: 0,
+          academicYear: created.enrollment.academicYear,
+          semester: created.enrollment.semester,
         }],
         message: 'Grade recorded',
       })
